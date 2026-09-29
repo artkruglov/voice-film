@@ -1,4 +1,4 @@
-import { Easing, Img, staticFile } from "remotion";
+import { Easing, Img, Loop, OffthreadVideo, Sequence, staticFile, useVideoConfig } from "remotion";
 import type { CSSProperties, ReactNode } from "react";
 import { camera as springCamera } from "../kit/camera";
 import { clamp01 } from "../kit/time";
@@ -34,10 +34,11 @@ export function Tag({ children, color = T.tx2, bg = "#efeee9", size = 22 }: { ch
 }
 
 /** Burned-in captions: one phrase at a time in the fixed band, blur swap, up to 2 lines. */
-export function Captions({ t, f }: { t: number; f: Fmt }) {
+export function Captions({ t, f, hide }: { t: number; f: Fmt; hide?: (text: string) => boolean }) {
   return (
     <>
       {CAPTIONS.map((c, i) => {
+        if (hide?.(c.text)) return null; // a kinetic phrase on screen is the caption for that second
         // sequential swap: out-fade finishes at `end`, the next caption fades in from its `start` — never two at once
         if (t < c.start || t >= c.end) return null;
         const v = clamp01((t - c.start) / 0.1) * (1 - clamp01((t - (c.end - 0.1)) / 0.1));
@@ -139,3 +140,21 @@ export function Stamp({ t, at, x, y, label, tag, color = T.bad }: { t: number; a
     </Box>
   );
 }
+
+/** A real product clip in a frame: starts playing at `from` (absolute seconds) and loops every `loop` seconds. Muted — audio is the mix. */
+export function Clip({ x, y, w, h, src, from, loop = 5, radius = 18, style }: { x: number; y: number; w: number; h: number; src: string; from: number; loop?: number; radius?: number; style?: CSSProperties }) {
+  const { fps } = useVideoConfig();
+  return (
+    <div style={{ position: "absolute", left: x, top: y, width: w, height: h, borderRadius: radius, overflow: "hidden", boxShadow: `0 0 0 1px ${T.ring}`, ...style }}>
+      <Sequence from={Math.round(from * fps)} layout="none">
+        <Loop durationInFrames={Math.round(loop * fps)} layout="none">
+          <OffthreadVideo src={staticFile(src)} muted style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+        </Loop>
+      </Sequence>
+    </div>
+  );
+}
+
+/** Match move helper: interpolate a rect (the same object travelling between scenes). */
+export type Rect = { x: number; y: number; w: number; h: number };
+export const lerpRect = (a: Rect, b: Rect, u: number): Rect => ({ x: a.x + (b.x - a.x) * u, y: a.y + (b.y - a.y) * u, w: a.w + (b.w - a.w) * u, h: a.h + (b.h - a.h) * u });

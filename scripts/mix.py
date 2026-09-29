@@ -11,11 +11,16 @@ Usage: mix.py <project> [--under -18] [--gap -10] [--lufs -16] [--voice-fx natur
 import json, os, re, subprocess, sys
 if len(sys.argv) < 2: sys.exit('usage: mix.py <project> [--under -18] [--gap -10] [--lufs -16] [--voice-fx natural|warm|broadcast|radio] [--loop-from 30]')
 ROOT = os.path.abspath(sys.argv[1])
-arg = lambda k, d: float(sys.argv[sys.argv.index(k) + 1]) if k in sys.argv else d
+# settings persist in <project>/mix.json, so render.sh (which re-runs mix.py) keeps what you chose
+SAVED_P = os.path.join(ROOT, 'mix.json'); SAVED = json.load(open(SAVED_P)) if os.path.exists(SAVED_P) else {}
+USED = {}
+def arg(k, d):
+    v = float(sys.argv[sys.argv.index(k) + 1]) if k in sys.argv else SAVED.get(k, d); USED[k] = v; return v
 T = json.load(open(os.path.join(ROOT, 'src', 'film', 'timing.json')))
 OUT = os.path.join(ROOT, 'out'); os.makedirs(OUT, exist_ok=True)
 TMP = os.path.join(OUT, 'tmp'); os.makedirs(TMP, exist_ok=True)
-sarg = lambda k, d: sys.argv[sys.argv.index(k) + 1] if k in sys.argv else d
+def sarg(k, d):
+    v = sys.argv[sys.argv.index(k) + 1] if k in sys.argv else SAVED.get(k, d); USED[k] = v; return v
 FX = {'natural': '',
       'warm': 'highpass=f=70,bass=g=3:f=120:w=0.7,equalizer=f=3000:t=q:w=1.2:g=1.5,acompressor=threshold=0.12:ratio=2.5:attack=8:release=120:makeup=2',
       'broadcast': 'highpass=f=80,bass=g=5:f=110:w=0.7,equalizer=f=3000:t=q:w=1.2:g=2.5,acompressor=threshold=0.1:ratio=4:attack=5:release=90:makeup=3',
@@ -24,6 +29,7 @@ VFX = sarg('--voice-fx', 'natural')
 if VFX not in FX: sys.exit(f'--voice-fx: one of {", ".join(FX)}')
 LOOP_FROM = arg('--loop-from', 30.0)
 DUR = T['duration']; VOICE_LUFS = arg('--lufs', -16.0); UNDER = arg('--under', -18.0); GAP = arg('--gap', -10.0)
+json.dump(USED, open(SAVED_P, 'w'), indent=1)
 ff = lambda *a: subprocess.run(['ffmpeg', '-v', 'error', '-y', *a], check=True)
 
 def loudness(path):

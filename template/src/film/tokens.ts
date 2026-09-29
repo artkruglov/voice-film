@@ -17,3 +17,9 @@ export const T = {
 } as const;
 
 export const FONT = '-apple-system, "SF Pro Display", system-ui, "Segoe UI", Roboto, sans-serif';
+export const SERIF = '"Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif';
+export const MONO = '"SF Mono", ui-monospace, "JetBrains Mono", Menlo, monospace';
+
+/** Type scale: three levels per frame at most. [horizontal, vertical] px; nothing smaller than `label`. */
+export const TYPE = { display: [92, 84], headline: [56, 52], body: [34, 36], label: [24, 28] } as const;
+export const ts = (k: keyof typeof TYPE, vertical: boolean) => TYPE[k][vertical ? 1 : 0];

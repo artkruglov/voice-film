@@ -10,7 +10,7 @@ def key():
     if not k: sys.exit('set OPENROUTER_API_KEY (or OPENROUTER_KEY_FILE=<path>) in the environment of this command')
     return k
 
-def post(path, body, timeout=300, stream=False, retries=3):
+def post(path, body, timeout=300, stream=False, retries=5):
     data = json.dumps(body).encode()
     for attempt in range(retries):
         req = urllib.request.Request(BASE + path, data=data, headers={'Authorization': 'Bearer ' + key(), 'Content-Type': 'application/json'})
@@ -24,7 +24,7 @@ def post(path, body, timeout=300, stream=False, retries=3):
             if e.code == 403: msg += '  (403 can mean the region is blocked: run from another network or set OPENROUTER_API_BASE)'
             sys.exit(f'OpenRouter {e.code}: {msg}')
         except Exception as e:  # timeouts, DNS
-            if attempt < retries - 1: time.sleep(3 * (attempt + 1)); continue
+            if attempt < retries - 1: time.sleep(5 * (attempt + 1)); continue  # DNS/network blips last seconds, not minutes
             sys.exit(f'OpenRouter request failed: {e}')
 
 def sse(resp):

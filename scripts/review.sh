@@ -4,6 +4,6 @@
 set -euo pipefail
 P="$(cd "$1" && pwd)"; DIR="$(mkdir -p "$2" && cd "$2" && pwd)"; shift 2
 cd "$P"; if command -v bun >/dev/null; then RUN=bun; else RUN="npx --yes tsx"; fi
-$RUN scripts/stills.ts $DIR/h "$@" --composition Film --props '{"fps":30,"vertical":false}' | tail -1
-$RUN scripts/stills.ts $DIR/v "$@" --composition FilmVertical --props '{"fps":30,"vertical":true}' | tail -1
-ls $DIR/h $DIR/v
+$RUN scripts/stills.ts "$DIR/h" "$@" --composition Film --props '{"fps":30,"vertical":false}' | tail -1
+$RUN scripts/stills.ts "$DIR/v" "$@" --composition FilmVertical --props '{"fps":30,"vertical":true}' | tail -1
+ls "$DIR/h" "$DIR/v"

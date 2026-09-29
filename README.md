@@ -16,13 +16,14 @@ Then ask Claude Code for "a film / video with voiceover about …" or run `/voic
 
 | Step | Tool |
 |---|---|
-| Script → voice lines | `scripts/extract_lines.py` (`## N.` sections, `**Voice:** "…"` paragraphs) |
-| Voice | `scripts/tts.py` — Gemini TTS or GPT audio via OpenRouter, voice samples to choose by ear |
+| Story + script check | `references/story.md` (story frame, arcs, golden template) · `scripts/script_lint.py` — hook ≤ 60 chars, ≤ 8 spoken numbers, lines ≤ 200 chars, lists ≤ 3, no logistics in the last line, voice direction present |
+| Script → voice lines | `scripts/extract_lines.py` (`## N.` sections, `**Voice:** "…"` paragraphs with `{mood= pace= hold=}` direction) |
+| Voice | `scripts/tts.py` — Gemini TTS or GPT audio via OpenRouter, voice samples to choose by ear, per-line delivery tags, every take transcribed and retried |
 | Voice check | `scripts/verify_voice.py` — transcribes each line and compares it with the script |
 | Music | `scripts/music.py` — Google Lyria via OpenRouter |
 | Timeline + captions | `scripts/timing.py` — silence detection, captions ≤ 42 chars snapped to real pauses |
 | Mix | `scripts/mix.py` — voice at −16 LUFS, music ducked under speech, optional voice colour presets |
-| Frames | `template/` — Remotion project with scene examples and parts; `scripts/review.sh` stills |
+| Frames | `template/` — Remotion project: type scale, scene examples, parts (screenshot camera, real clips, bars, quotes, stamps, match moves); rules in `references/visual-grammar.md`; `scripts/review.sh` stills |
 | Frame review | `scripts/review_frames.py` — a vision model as a second pair of eyes |
 | Render | `scripts/render.sh` — 120 fps master → motion blur → 30 fps, both formats, contact sheets |
 | Check | `scripts/check.sh` — streams, decode, loudness |
@@ -32,7 +33,7 @@ Remotion itself has its own license (free for individuals and small companies; c
 
 Requirements: Node ≥ 20, ffmpeg/ffprobe, Python 3 (standard library only), bun or `npx tsx` for review stills. An [OpenRouter](https://openrouter.ai) key for voice, music and checks, passed only through the environment: `OPENROUTER_API_KEY=…` or `OPENROUTER_KEY_FILE=<path>`. `OPENROUTER_API_BASE` points the scripts at your own egress if OpenRouter is blocked in your region.
 
-Script examples and caption rules are tuned for Russian (numbers spelled out, no breaks after short prepositions); English scripts work with `**Voice:** "…"`.
+Works in Russian and English (caption breaking keeps spoken numbers whole in both). Proven on a 3-minute decision film (RU) and an 83-second product launch film (EN).
 
 ## Credits
 

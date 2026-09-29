@@ -3,7 +3,7 @@
 - places lines back to back: each line starts at its paragraph's visual beat (PRE), trailing air (AIR) after the speech
 - captions: text from lines.json, split into phrases <= 42 chars; timed by character count inside the line's speech,
   with sentence ends snapped to the nearest measured pause (so captions change where the voice actually breathes)
-Per-line lead-in/air come from lines.json fields `pre`/`air` (defaults 0.5 / 0.6).
+Per-line lead-in/air come from lines.json fields `pre`/`air` (defaults 0.5 / 0.6); `hold` adds a mute beat after the line.
 Usage: timing.py <project> [--maxc 42]  -> <project>/src/film/timing.json"""
 import json, os, re, subprocess, sys
 ROOT = os.path.abspath(sys.argv[1]) if len(sys.argv) > 1 else sys.exit('usage: timing.py <project> [--maxc 42]')
@@ -11,9 +11,10 @@ VO = os.path.join(ROOT, 'audio', 'vo')
 lines = json.load(open(os.path.join(VO, 'lines.json')))
 MAXC = int(sys.argv[sys.argv.index('--maxc') + 1]) if '--maxc' in sys.argv else 42
 PRE = {L['id']: L.get('pre', 0.5) for L in lines}
-AIR = {L['id']: L.get('air', 0.6) for L in lines}
-# Russian number words: a caption never breaks between two of them (extend for other languages)
-NUM = set('один одна одну два две три четыре пять пяти шесть семь восемь девять десять одиннадцать двенадцать тринадцать четырнадцать двадцать двадцати тридцать тридцати сорок пятьдесят сто двести триста шестьсот шестисот'.split())
+AIR = {L['id']: L.get('air', 0.6) + L.get('hold', 0) for L in lines}  # hold = mute beat: picture + music only
+# number words (ru + en): a caption never breaks between two of them
+NUM = set('один одна одну два две три четыре пять пяти шесть семь восемь девять десять одиннадцать двенадцать тринадцать четырнадцать двадцать двадцати тридцать тридцати сорок пятьдесят сто двести триста шестьсот шестисот '
+          'one two three four five six seven eight nine ten eleven twelve thirteen fifteen twenty thirty forty fifty sixty seventy eighty ninety hundred thousand million percent'.split())
 
 def probe(path):
     dur = float(subprocess.run(['ffprobe', '-v', 'error', '-show_entries', 'format=duration', '-of', 'csv=p=0', path], capture_output=True, text=True).stdout)
@@ -45,8 +46,9 @@ def phrases(text):
                 if j < n:
                     last, nxt = w[j - 1], w[j]
                     if last[-1] in ',:;': cost -= 250
-                    elif nxt == '—': cost -= 120
-                    if len(last.strip(',:;')) <= 3 and last[-1] not in ',:;': cost += 900
+                    elif last == '—': cost -= 120  # break after a dash, never start a caption with one
+                    if nxt == '—': cost += 500
+                    if len(last.strip(',:;')) <= 3 and last[-1] not in ',:;—': cost += 900
                     if nxt in ('же', 'ли', 'бы'): cost += 900
                     if last.lower().strip(',:;') in NUM and nxt.lower().strip(',:;') in NUM: cost += 600  # keep spoken numbers whole
                 if best[i] + cost < best[j]: best[j] = best[i] + cost; prev[j] = i
