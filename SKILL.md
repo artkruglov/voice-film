@@ -88,7 +88,7 @@ Rules for composition, motion, match moves, screenshots, captions and safe zones
 `review.sh` stills at 2–3 frames per scene in both formats (frame = seconds × 30; in zsh pass frames as an array: `F=(60 240 …); review.sh … "${F[@]}"`). Look for: text cut off, overlaps, captions over key visuals, empty frames, wrong numbers. Then run `review_frames.py` on the same stills (a vision model lists problems per frame; exit code 1 on "fix needed") — it catches small text and overlaps you skimmed past, but misreads grid timestamps, so it never replaces your own look. Fix, re-check. Then `render.sh --fast` for a full draft and look at `out/film-contact.png` and the vertical contact sheet.
 
 ### 8. Final render and verification
-`render.sh` (120 fps master → motion blur → 30 fps, ~7 min render per minute of film per format). `check.sh` must show: video + audio streams, equal durations, `decode ok`, ≈ −16 LUFS, peak ≤ −1 dBFS. Look at a few frames of the finished mp4s yourself (ffmpeg `-ss`) before reporting.
+`render.sh` (120 fps master → motion blur → 30 fps, or 24 fps when the film embeds 24 fps clips; ~7 min render per minute of film per format). `check.sh` must show: video + audio streams, equal durations, `decode ok`, ≈ −16 LUFS, peak ≤ −1 dBFS. Look at a few frames of the finished mp4s yourself (ffmpeg `-ss`) before reporting.
 
 ### 9. Deliver
 Send both mp4s (16:9 and 9:16) and the poster. For a web page that accepts one HTML file only (an internal wiki or artifact host, ≤ 5 MB): `web_compress.py … --max-mb 3.5` then `embed_page.py`, publish the page, open the link and check that the player loads. Record paths, voice, engine, music source and loudness in the project `README.md`.
@@ -107,6 +107,7 @@ Send both mp4s (16:9 and 9:16) and the poster. For a web page that accepts one H
 - ffmpeg `loudnorm` resamples to 192 kHz and can eat the tail — `mix.py` measures and applies linear gain instead; if you add `loudnorm` anywhere, follow it with `aresample=48000` and pad to length.
 - TTS swallows or swaps words in ways that are easy to miss by ear. When `verify_voice.py` flags a line, rephrase it rather than re-voicing the same text.
 - Web copies: `web_compress.py` uses `-tune animation`, which keeps flat UI and small text sharp at high crf.
+- **Frame rate follows the footage.** 24 fps clips inside a 30 fps film judder (every 4th frame repeats — viewers call it "it stutters"). `render.sh` detects 24 fps clips in `public/` and renders at 24 fps (120 fps master = 5 × 24, so motion blur stays); force with `--fps 30|24`. Check a clip segment if in doubt: `tblend=all_mode=difference` + `signalstats` shows an uneven 2-3 cadence when it judders.
 - `render.sh` re-runs `timing.py` and `mix.py`; mix options persist in `<project>/mix.json`, so a chosen `--voice-fx` survives the render.
 - Captions: breaks go after a dash, never before it; if a caption starts with "—", re-run `timing.py` after updating the skill.
 
